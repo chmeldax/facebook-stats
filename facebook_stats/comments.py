@@ -45,9 +45,9 @@ def load_batch(url):
     response = None
     while True: # timeout
         response = _process_request(url)
-        extend_sleep = _is_sleep_response(response)
-        _process_sleep(extend_sleep)
-        if extend_sleep==False:
+        shoud_limit = _check_response(response)
+        _process_sleep(shoud_limit)
+        if shoud_limit==False:
             break
     _process_batch(response['data'])
     _next_task(response) # when the whole tree will be done?
@@ -58,13 +58,16 @@ def _process_request(url):
     return json.load(raw_response)
 
 
-def _is_sleep_response(response):
-     return True if response.has_key('sleep') else False # Check API
-
-
-def _is_data_response(response):
-    return True if response.has_key('date') else False
-
+def _check_response(response): # FIXME: Refactor
+    if response.has_key('data'):
+        return True
+    try:
+        error_code = response['error']['code']
+    except KeyError:
+        raise RuntimeError('Unknown response.')
+    if error_code == 4:
+        return False
+    raise RuntimeError('Error with code: {code}'.format(code=error_code))
 
 def _process_sleep(extend_sleep):
     global redis_conn
