@@ -4,7 +4,7 @@ import time
 import dateutil.parser
 import redis
 
-from celery.signals import worker_process_init, worker_process_shutdown, before_task_publish
+from celery.signals import worker_process_init, worker_process_shutdown, before_task_publish, task_postrun
 
 redis_conn = None
 REDIS_KEY_PATTERN = 'facebook-comments-{key}' # Not save if previous task crashed, should add PID or sth like that
@@ -28,7 +28,7 @@ def before_task():
     workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
     redis_conn.incr(workers_count_key)
 
-
+@task_postrun.connect
 def after_task():
     global redis_conn
     workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
