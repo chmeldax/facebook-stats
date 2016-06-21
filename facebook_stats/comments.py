@@ -4,7 +4,10 @@ import time
 import dateutil.parser
 import redis
 
+from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown, before_task_publish, task_postrun
+
+app = Celery('tasks', broker='redis://localhost:6379/0')
 
 redis_conn = None
 REDIS_KEY_PATTERN = 'facebook-comments-{key}' # Not save if previous task crashed, should add PID or sth like that
