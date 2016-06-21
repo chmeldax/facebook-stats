@@ -4,7 +4,7 @@ import time
 import dateutil.parser
 import redis
 
-from celery.signals import worker_process_init, worker_process_shutdown
+from celery.signals import worker_process_init, worker_process_shutdown, before_task_publish
 
 redis_conn = None
 REDIS_KEY_PATTERN = 'facebook-comments-{key}' # Not save if previous task crashed, should add PID or sth like that
@@ -20,6 +20,25 @@ def shutdown_worker(**kwargs):
     global redis_conn
     if redis_conn:
         redis_conn.disconnect()
+
+
+@before_task_publish.connect
+def before_task():
+    global redis_conn
+    workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
+    redis_conn.incr(workers_count_key)
+
+
+def after_task():
+    global redis_conn
+    workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
+    redis_conn.decr(workers_count_key)
+    if redis_conn.get(workers_count_key) == 0:
+        summarize() # do not fire before_task once again?
+
+def summarize():
+    pass
+
 
 @app.task
 def load_batch(url):
