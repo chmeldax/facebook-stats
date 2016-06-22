@@ -1,9 +1,0 @@
-amqp==1.4.9
-anyjson==0.3.3
-billiard==3.3.0.23
-celery==3.1.23
-kombu==3.0.35
-python-dateutil==2.5.3
-pytz==2016.4
-redis==2.10.5
-six==1.10.0

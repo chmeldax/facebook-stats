@@ -1,6 +1,7 @@
 import redis
 import re
 from celery.signals import worker_process_init, worker_process_shutdown, task_postrun
+from svg.charts import time_series
 
 from facebook_stats.app import app
 from facebook_stats.comments import Comments
@@ -48,9 +49,20 @@ def summarize():
     dates = {}
     for key in redis_conn.keys(REDIS_KEY_PATTERN.format(key='date-*')):
         date_key = _parse_date(key)
-        dates[date_key] = redis_conn.get(key)
+        dates[date_key] = int(redis_conn.get(key))
     print(dates)
+    _print(dates)
 
+
+def _print(dates):
+    graph = time_series.Plot({})
+    graph.timescale_divisions = '1 day'
+    graph.stagger_x_labels = True
+    graph.min_y_value = 0
+
+    data = list(sum(dates.items(), ()))
+    graph.add_data({'data': data, 'title': 'series 1'})
+    print(graph.burn())
 
 def _parse_date(date):
     matches = re.search("facebook-comments-date-([\d]+-[\d]+-[\d]+)", date)
