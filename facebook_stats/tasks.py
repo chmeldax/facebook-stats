@@ -9,6 +9,7 @@ from facebook_stats.comments import Comments
 
 redis_conn = None
 comments = None
+dates = None
 
 REDIS_KEY_PATTERN = 'facebook-comments-{key}-' + str(app.conf['UUID'])
 
@@ -46,10 +47,12 @@ def after_task(**kwargs):
 
 def summarize():
     global redis_conn
+    global dates
     dates = {}
     for key in redis_conn.keys(REDIS_KEY_PATTERN.format(key='date-*')):
         date_key = _parse_date(key)
         dates[date_key] = int(redis_conn.get(key))
+        redis_conn.delete(key)
     print(dates)
     _print(dates)
 

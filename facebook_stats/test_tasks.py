@@ -15,21 +15,23 @@ class TestComments(unittest.TestCase):
         tasks.comments = Comments(tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
 
     def test_load_batch(self):
-
         facebook_mock = FacebookMock()
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_mock.execute):
                 tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
+                self.assertDictEqual({'10-07-13': 1, '09-07-13': 1}, tasks.dates)
 
     def test_load_batch_with_sleep(self):
         facebook_sleep_mock = FacebookSleepMock()
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_sleep_mock.execute):
                 tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
+                self.assertDictEqual({'11-07-13': 1, '10-07-13': 1}, tasks.dates)
 
     def tearDown(self):
         tasks.redis_conn = None
         tasks.comments = None
+        tasks.dates = None
 
 class FacebookMock(object):
 
@@ -134,6 +136,10 @@ class FacebookSleepMock(object):
         {
           "created_time": "2013-07-10T14:12:33+0000",
           "id": "10151775534413086_29777454"
+        },
+        {
+           "created_time": "2013-07-11T14:12:33+0000",
+           "id": "10151775534413086_29777454"
         }
       ],
       "paging": {
