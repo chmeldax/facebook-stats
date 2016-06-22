@@ -5,12 +5,22 @@ import time
 
 class Comments(object):
 
-    def __init__(self, redis, api_key, redis_key_pattern):
+    def __init__(self, redis, redis_key_pattern: str):
+        """
+
+        :param redis: Redis connection
+        :param redis_key_pattern: String with Redis key pattern
+        :return: self
+        """
         self._redis = redis
-        self._api_key = api_key
         self._redis_key_pattern = redis_key_pattern
 
-    def load_batch(self, url):
+    def load_batch(self, url: str) -> str:
+        """
+        Loads one batch at the specified URL
+        :param url: Whole URL
+        :return: Next task URL
+        """
         response = None
         while True:  # timeout
             response = self._process_request(url)

@@ -12,11 +12,16 @@ REDIS_KEY_PATTERN = 'facebook-comments-{key}-' + str(app.conf['UUID'])
 
 
 redis_conn = redis.Redis(decode_responses=True)
-comments = Comments(redis_conn, None, REDIS_KEY_PATTERN)
+comments = Comments(redis_conn, REDIS_KEY_PATTERN)
 dates = None
 
 
 def before_task():
+    """
+    Used as a hook. Not using native celery's hook
+    had issue in tests
+    :return: None
+    """
     global redis_conn
     print("before")
     workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
@@ -25,6 +30,11 @@ def before_task():
 
 @task_postrun.connect
 def after_task(**kwargs):
+    """
+    Celery's hook
+    :param kwargs:
+    :return: None
+    """
     global redis_conn
     print('after')
     workers_count_key = REDIS_KEY_PATTERN.format(key='workers-count')
@@ -34,6 +44,10 @@ def after_task(**kwargs):
 
 
 def summarize():
+    """
+    Generates SVG with time series
+    :return:
+    """
     global redis_conn
     global dates
     dates = {}
@@ -69,6 +83,11 @@ def _parse_date(date):
 
 @app.task
 def load_batch(url):
+    """
+    Celery's task to one batch + all other subsequent ones
+    :param url:
+    :return:
+    """
     global comments
     next_url = comments.load_batch(url)
     if next_url:

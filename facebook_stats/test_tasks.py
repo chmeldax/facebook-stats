@@ -13,7 +13,7 @@ class TestComments(unittest.TestCase):
         tasks.redis_conn = redis.Redis(decode_responses=True)
         tasks.before_task()
         tasks.comments = Comments(
-            tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
+            tasks.redis_conn, tasks.REDIS_KEY_PATTERN)
 
     @mock.patch('time.sleep', return_value=None)
     def test_load_batch(self, sleep_mock):
