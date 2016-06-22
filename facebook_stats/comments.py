@@ -1,5 +1,6 @@
 import requests
 import dateutil.parser
+import time
 
 
 class Comments(object):
@@ -43,7 +44,7 @@ class Comments(object):
             self._redis.incr(sleep_key, 2)
         sleep = int(self._redis.get(sleep_key) or 1)
         print("Sleeping for {seconds} seconds.".format(seconds=sleep))
-        # time.sleep(sleep) # Celery's countdown or sleep?
+        time.sleep(sleep) # Celery's countdown or sleep?
 
     def _process_batch(self, batch):
         for comment in batch:

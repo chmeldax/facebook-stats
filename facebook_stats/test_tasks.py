@@ -14,19 +14,23 @@ class TestComments(unittest.TestCase):
         tasks.before_task()
         tasks.comments = Comments(tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
 
-    def test_load_batch(self):
+    @mock.patch('time.sleep', return_value=None)
+    def test_load_batch(self, sleep_mock):
         facebook_mock = FacebookMock()
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_mock.execute):
                 tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
                 self.assertDictEqual({'10-07-13': 1, '09-07-13': 1}, tasks.dates)
+        sleep_mock.assert_has_calls([mock.call(1), mock.call(1)])
 
-    def test_load_batch_with_sleep(self):
+    @mock.patch('time.sleep', return_value=None)
+    def test_load_batch_with_sleep(self, sleep_mock):
         facebook_sleep_mock = FacebookSleepMock()
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_sleep_mock.execute):
                 tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
                 self.assertDictEqual({'11-07-13': 1, '10-07-13': 1}, tasks.dates)
+        sleep_mock.assert_has_calls([mock.call(2)])
 
     def tearDown(self):
         tasks.redis_conn = None
