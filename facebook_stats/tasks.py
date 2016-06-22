@@ -1,31 +1,19 @@
 import redis
 import re
-from celery.signals import worker_process_init, worker_process_shutdown, task_postrun
+import os
+from celery.signals import task_postrun
 from svg.charts import time_series
 
 from facebook_stats.app import app
 from facebook_stats.comments import Comments
 
 
-redis_conn = None
-comments = None
-dates = None
-
 REDIS_KEY_PATTERN = 'facebook-comments-{key}-' + str(app.conf['UUID'])
 
-@worker_process_init.connect
-def init_worker(**kwargs):
-    global redis_conn
-    global comments
-    redis_conn = redis.Redis(decode_responses=True)
-    comments = Comments(redis_conn, None, REDIS_KEY_PATTERN)
 
-
-@worker_process_shutdown.connect
-def shutdown_worker(**kwargs):
-    global redis_conn
-    if redis_conn:
-        redis_conn.disconnect()
+redis_conn = redis.Redis(decode_responses=True)
+comments = Comments(redis_conn, None, REDIS_KEY_PATTERN)
+dates = None
 
 
 def before_task():
@@ -65,7 +53,12 @@ def _print(dates):
 
     data = list(sum(dates.items(), ()))
     graph.add_data({'data': data, 'title': 'series 1'})
-    print(graph.burn())
+    _save(graph.burn())
+
+def _save(graph_svg):
+    root = os.path.dirname(__file__)
+    with open(os.path.join(root, 'output.svg'), 'wb') as f:
+        f.write(graph_svg)
 
 def _parse_date(date):
     matches = re.search("facebook-comments-date-([\d]+-[\d]+-[\d]+)", date)
