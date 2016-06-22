@@ -55,10 +55,12 @@ def _print(dates):
     graph.add_data({'data': data, 'title': 'series 1'})
     _save(graph.burn())
 
+
 def _save(graph_svg):
     root = os.path.dirname(__file__)
     with open(os.path.join(root, 'output.svg'), 'wb') as f:
         f.write(graph_svg)
+
 
 def _parse_date(date):
     matches = re.search("facebook-comments-date-([\d]+-[\d]+-[\d]+)", date)

@@ -20,7 +20,8 @@ class Comments(object):
             if not should_limit:
                 break
         self._process_batch(response['data'])
-        return self._next_task_url(response)  # when the whole tree will be done?
+        # when the whole tree will be done?
+        return self._next_task_url(response)
 
     @staticmethod
     def _process_request(url):
@@ -44,7 +45,7 @@ class Comments(object):
             self._redis.incr(sleep_key, 2)
         sleep = int(self._redis.get(sleep_key) or 1)
         print("Sleeping for {seconds} seconds.".format(seconds=sleep))
-        time.sleep(sleep) # Celery's countdown or sleep?
+        time.sleep(sleep)  # Celery's countdown or sleep?
 
     def _process_batch(self, batch):
         for comment in batch:

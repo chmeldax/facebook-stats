@@ -12,15 +12,18 @@ class TestComments(unittest.TestCase):
     def setUp(self):
         tasks.redis_conn = redis.Redis(decode_responses=True)
         tasks.before_task()
-        tasks.comments = Comments(tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
+        tasks.comments = Comments(
+            tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
 
     @mock.patch('time.sleep', return_value=None)
     def test_load_batch(self, sleep_mock):
         facebook_mock = FacebookMock()
         with mock.patch('facebook_stats.celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_mock.execute):
-                tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
-                self.assertDictEqual({'10-07-13': 1, '09-07-13': 1}, tasks.dates)
+                tasks.load_batch.apply(args=(
+                    'https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
+                self.assertDictEqual(
+                    {'10-07-13': 1, '09-07-13': 1}, tasks.dates)
         sleep_mock.assert_has_calls([mock.call(1), mock.call(1)])
 
     @mock.patch('time.sleep', return_value=None)
@@ -28,14 +31,17 @@ class TestComments(unittest.TestCase):
         facebook_sleep_mock = FacebookSleepMock()
         with mock.patch('facebook_stats.celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(facebook_sleep_mock.execute):
-                tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
-                self.assertDictEqual({'11-07-13': 1, '10-07-13': 1}, tasks.dates)
+                tasks.load_batch.apply(args=(
+                    'https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
+                self.assertDictEqual(
+                    {'11-07-13': 1, '10-07-13': 1}, tasks.dates)
         sleep_mock.assert_has_calls([mock.call(2)])
 
     def tearDown(self):
         tasks.redis_conn = None
         tasks.comments = None
         tasks.dates = None
+
 
 class FacebookMock(object):
 
@@ -59,7 +65,7 @@ class FacebookMock(object):
 
     @staticmethod
     def _first_response():
-       return """{
+        return """{
           "data": [
             {
               "created_time": "2013-07-09T14:12:33+0000",
@@ -110,6 +116,7 @@ class FacebookMock(object):
               }
             }"""
 
+
 class FacebookSleepMock(object):
 
     def __init__(self):
@@ -123,7 +130,6 @@ class FacebookSleepMock(object):
         else:
             return self._last_response()
 
-
     @staticmethod
     def _sleep_response():
         return """{
@@ -135,7 +141,7 @@ class FacebookSleepMock(object):
 
     @staticmethod
     def _last_response():
-     return """{
+        return """{
       "data": [
         {
           "created_time": "2013-07-10T14:12:33+0000",
