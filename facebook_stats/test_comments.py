@@ -15,6 +15,16 @@ class TestComments(unittest.TestCase):
                 comments.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
 
 
+    def test_load_batch_with_sleep(self):
+        self._sent_error = False
+        comments.redis_conn = redis.Redis(decode_responses=True)
+        comments.before_task()
+        with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
+            with HTTMock(self._facebook_sleep_mock):
+                comments.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
+
+
+
     # FIXME: Refactor
     @all_requests
     def _facebook_mock(self, url, request):
@@ -69,5 +79,32 @@ class TestComments(unittest.TestCase):
               }
             }"""
 
+
+    # FIXME: Refactor
+    @all_requests
+    def _facebook_sleep_mock(self, url, request):
+        if self._sent_error == False:
+            self._sent_error = True
+            return """{
+                "error":
+                {
+                    "code": 4
+                }
+                }"""
+        else:
+             return """{
+              "data": [
+                {
+                  "created_time": "2013-07-10T14:12:33+0000",
+                  "id": "10151775534413086_29777454"
+                }
+              ],
+              "paging": {
+                "cursors": {
+                  "before": "WTI5dGJXVnVkRjlqZAFhKemIzSTZANVEF4TlRFM056VTFOREExTmpnd09EWTZANamszTnpjME5UUT0ZD",
+                  "after": "WTI5dGJXVnVkRjlqZAFhKemIzSTZANVEF4TlRFM056VTFOREEyTlRNd09EWTZANamszTnpjME5UZAz0ZD"
+                }
+              }
+            }"""
 if __name__ == '__main__':
     unittest.main()
