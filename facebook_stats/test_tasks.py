@@ -3,33 +3,34 @@ from unittest import mock
 import redis
 from httmock import HTTMock, all_requests
 
-import facebook_stats.comments as comments
+import facebook_stats.tasks as tasks
+from facebook_stats.comments import Comments
+
 
 class TestComments(unittest.TestCase):
 
     def test_load_batch(self):
-        comments.redis_conn = redis.Redis(decode_responses=True)
-        comments.before_task()
+        tasks.redis_conn = redis.Redis(decode_responses=True)
+        tasks.before_task()
+        tasks.comments = Comments(tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(self._facebook_mock):
-                comments.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
-
+                tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
 
     def test_load_batch_with_sleep(self):
         self._sent_error = False
-        comments.redis_conn = redis.Redis(decode_responses=True)
-        comments.before_task()
+        tasks.redis_conn = redis.Redis(decode_responses=True)
+        tasks.before_task()
+        tasks.comments = Comments(tasks.redis_conn, None, tasks.REDIS_KEY_PATTERN)
         with mock.patch('celeryconfig.CELERY_ALWAYS_EAGER', True, create=True):
             with HTTMock(self._facebook_sleep_mock):
-                comments.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
-
-
+                tasks.load_batch.apply(args=('https://graph.facebook.com/v2.6/51752540096_10151775534413086/comments?fields=created_time&filter=stream&limit=1',)).get()
 
     # FIXME: Refactor
     @all_requests
     def _facebook_mock(self, url, request):
         raw_params = url.query.split('&')
-        params = { name: value for (name, value) in (p.split('=') for p in raw_params) }
+        params = {name: value for (name, value) in (p.split('=') for p in raw_params)}
 
         if 'after' not in params:
             return """{
@@ -79,11 +80,10 @@ class TestComments(unittest.TestCase):
               }
             }"""
 
-
     # FIXME: Refactor
     @all_requests
     def _facebook_sleep_mock(self, url, request):
-        if self._sent_error == False:
+        if not self._sent_error:
             self._sent_error = True
             return """{
                 "error":
